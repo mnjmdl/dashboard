@@ -60,6 +60,28 @@ export default function UsersPage() {
     fetchUsers(); // Refresh the users list
   };
 
+  const handleExportUsers = async () => {
+    try {
+      const response = await fetch('/api/users/export');
+      if (!response.ok) {
+        throw new Error('Failed to export users');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export users. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -90,7 +112,10 @@ export default function UsersPage() {
           <p className="text-slate-500 mt-1 dark:text-slate-400">Manage user accounts and permissions</p>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="px-4 py-2 bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 dark:bg-gray-800/80 dark:border-gray-700/20 dark:text-slate-200">
+          <button
+            onClick={handleExportUsers}
+            className="px-4 py-2 bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 dark:bg-gray-800/80 dark:border-gray-700/20 dark:text-slate-200"
+          >
             Export Users
           </button>
           <button

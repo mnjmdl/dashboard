@@ -43,7 +43,7 @@ export default function AssetsPage() {
 
   useEffect(() => {
     fetchAssets();
-  }, [currentPage, filter, typeFilter, itemsPerPage]);
+  }, [currentPage, filter, typeFilter, itemsPerPage, searchTerm]);
 
   useEffect(() => {
     localStorage.setItem('assetsItemsPerPage', itemsPerPage.toString());
@@ -114,9 +114,39 @@ export default function AssetsPage() {
     setEditingAsset(null);
   };
 
+  const handleExportAssets = async () => {
+    try {
+      // Fetch all assets for export (not paginated)
+      const params = new URLSearchParams({
+        ...(filter !== 'all' && { status: filter }),
+        ...(typeFilter !== 'all' && { type: typeFilter }),
+        ...(searchTerm && { search: searchTerm })
+      });
+
+      const response = await fetch(`/api/assets/export?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to export assets');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `assets_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export assets. Please try again.');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'in_stock': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'maintenance': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'retired': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
       case 'lost': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
@@ -201,7 +231,10 @@ export default function AssetsPage() {
           <p className="text-slate-500 mt-1 dark:text-slate-400">Track and manage IT equipment and resources</p>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="px-4 py-2 bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 dark:bg-gray-800/80 dark:border-gray-700/20 dark:text-slate-200">
+          <button
+            onClick={handleExportAssets}
+            className="px-4 py-2 bg-white/80 backdrop-blur-xl rounded-xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 dark:bg-gray-800/80 dark:border-gray-700/20 dark:text-slate-200"
+          >
             Export Assets
           </button>
           <button
@@ -287,9 +320,11 @@ export default function AssetsPage() {
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
+              <option value="in_stock">In Stock</option>
               <option value="maintenance">Maintenance</option>
               <option value="retired">Retired</option>
               <option value="lost">Lost</option>
+              <option value="unassigned">Unassigned</option>
             </select>
 
             <select
@@ -380,7 +415,7 @@ export default function AssetsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(asset.status)}`}>
-                      {asset.status}
+                      {asset.status === 'in_stock' ? 'In Stock' : asset.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
