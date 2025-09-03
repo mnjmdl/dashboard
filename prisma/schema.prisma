@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Base models first
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  role      String   @default("user") // user, admin, technician, manager
+  department String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  description String?
+  managerId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("departments")
+}
+
+model Asset {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String   // computer, monitor, printer, server, network_device, software_license
+  model       String?
+  serialNumber String? @unique
+  purchaseOrder String? // Purchase Order number
+  purchaseDate DateTime?
+  warrantyExpiry DateTime?
+  location    String?
+  status      String   @default("active") // active, maintenance, retired, lost
+
+  // Relations
+  assignedToId Int?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("assets")
+}
+
+model Ticket {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  status      String   @default("open") // open, in_progress, resolved, closed
+  priority    String   @default("medium") // low, medium, high, urgent
+  category    String   // hardware, software, network, access, other
+  tags        String?  // JSON array of tags
+
+  // Relations
+  creatorId   Int
+  assigneeId  Int?
+  assetId     Int?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  resolvedAt  DateTime?
+  dueDate     DateTime?
+
+  @@map("tickets")
+}
+
+model TicketComment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  isInternal Boolean @default(false)
+
+  ticketId  Int
+  authorId  Int
+
+  createdAt DateTime @default(now())
+
+  @@map("ticket_comments")
+}
+
+// Analytics and settings (existing models)
+model Analytics {
+  id          Int      @id @default(autoincrement())
+  eventType   String
+  eventData   String?  // JSON string for flexible data storage
+  userId      Int?
+  timestamp   DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+
+  @@map("analytics")
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+  type  String @default("string") // string, number, boolean, json
+
+  @@map("settings")
+}
