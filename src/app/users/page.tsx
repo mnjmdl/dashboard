@@ -29,7 +29,7 @@ export default function UsersPage() {
         throw new Error('Failed to fetch users');
       }
       const data = await response.json();
-      setUsers(data);
+      setUsers(data.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

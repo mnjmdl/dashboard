@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import AddAssetForm from '@/components/AddAssetForm';
 import EditAssetForm from '@/components/EditAssetForm';
+import AssetTransactionHistory from '@/components/AssetTransactionHistory';
 
 interface Asset {
   id: number;
@@ -16,6 +17,11 @@ interface Asset {
   location: string | null;
   status: string;
   assignedToId: number | null;
+  assignedTo: {
+    id: number;
+    name: string | null;
+    email: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +39,8 @@ export default function AssetsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [showTransactionHistory, setShowTransactionHistory] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('assetsItemsPerPage');
@@ -112,6 +120,11 @@ export default function AssetsPage() {
     fetchAssets(); // Refresh the assets list
     setShowEditForm(false);
     setEditingAsset(null);
+  };
+
+  const handleViewTransactionHistory = (assetId: number) => {
+    setSelectedAssetId(assetId);
+    setShowTransactionHistory(true);
   };
 
   const handleExportAssets = async () => {
@@ -220,6 +233,16 @@ export default function AssetsPage() {
         }}
         onAssetUpdated={handleAssetUpdated}
         asset={editingAsset}
+      />
+
+      {/* Transaction History Modal */}
+      <AssetTransactionHistory
+        assetId={selectedAssetId || 0}
+        isOpen={showTransactionHistory}
+        onClose={() => {
+          setShowTransactionHistory(false);
+          setSelectedAssetId(null);
+        }}
       />
 
       {/* Page Header */}
@@ -422,7 +445,7 @@ export default function AssetsPage() {
                     {asset.location || 'Not specified'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                    {asset.assignedToId ? `User ${asset.assignedToId}` : 'Unassigned'}
+                    {asset.assignedTo ? (asset.assignedTo.name || asset.assignedTo.email) : 'Unassigned'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
@@ -434,10 +457,13 @@ export default function AssetsPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button className="text-slate-600 hover:text-slate-900 transition-colors dark:text-slate-400 dark:hover:text-slate-300">
+                      <button
+                        onClick={() => handleViewTransactionHistory(asset.id)}
+                        className="text-slate-600 hover:text-slate-900 transition-colors dark:text-slate-400 dark:hover:text-slate-300"
+                        title="View transaction history"
+                      >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                       </button>
                     </div>

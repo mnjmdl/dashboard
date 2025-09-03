@@ -4,11 +4,12 @@ import { prisma } from '@/lib/prisma'
 // GET /api/users/[id] - Get a specific user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     if (!user) {
@@ -31,14 +32,15 @@ export async function GET(
 // PUT /api/users/[id] - Update a user
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json()
     const { email, name, role } = body
 
     const user = await prisma.user.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: {
         ...(email && { email }),
         ...(name !== undefined && { name }),
@@ -59,11 +61,12 @@ export async function PUT(
 // DELETE /api/users/[id] - Delete a user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.user.delete({
-      where: { id: parseInt(params.id) }
+      where: { id: parseInt(id) }
     })
 
     return NextResponse.json({ message: 'User deleted successfully' })

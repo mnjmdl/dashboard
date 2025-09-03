@@ -40,7 +40,16 @@ export async function GET(request: NextRequest) {
         where,
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
+        include: {
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
       }),
       prisma.asset.count({ where })
     ])

@@ -1,13 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET /api/users - Get all users
-export async function GET() {
+// GET /api/users - Get all users with search and pagination
+export async function GET(request: NextRequest) {
   try {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: 'desc' }
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get('search')
+    const limit = parseInt(searchParams.get('limit') || '100')
+    const page = parseInt(searchParams.get('page') || '1')
+    const offset = (page - 1) * limit
+
+    let where = {}
+    if (search) {
+      where = {
+        OR: [
+          { name: { contains: search } },
+          { email: { contains: search } },
+          { department: { contains: search } }
+        ]
+      }
+    }
+
+    const [users, totalCount] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        take: limit,
+        skip: offset
+      }),
+      prisma.user.count({ where })
+    ])
+
+    return NextResponse.json({
+      data: users,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit)
+      }
     })
-    return NextResponse.json(users)
   } catch (error) {
     console.error('Error fetching users:', error)
     return NextResponse.json(
@@ -21,7 +53,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, name, role } = body
+    const { email, name, role, department } = body
 
     if (!email) {
       return NextResponse.json(
@@ -34,7 +66,8 @@ export async function POST(request: NextRequest) {
       data: {
         email,
         name,
-        role: role || 'user'
+        role: role || 'user',
+        department
       }
     })
 
